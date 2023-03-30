@@ -103,6 +103,22 @@ function agregarAlCarritoClickeado(event) {
     const itemTitle = item.querySelector('.item-title').textContent;
     const itemPrice = item.querySelector('.item-price').textContent;
     const itemImage = item.querySelector('.item-image').src;
+
+
+    const datosProd = {
+      title: itemTitle,
+      price: itemPrice,
+      image: itemImage
+    };
+
+    // Obtener el array de artículos del LocalStorage o crear uno nuevo si no existe.
+    let items = JSON.parse(localStorage.getItem('items')) || [];
+
+    // Agregar el nuevo artículo al array.
+    items.push(datosProd);
+
+    // Guardar el array en el LocalStorage como una cadena JSON.
+    localStorage.setItem('items', JSON.stringify(items));
   
     agregarItemAlCarrito(itemTitle, itemPrice, itemImage);
   }
@@ -121,7 +137,6 @@ function agregarAlCarritoClickeado(event) {
         return;
       }
     }
-
     // Se crea un nuevo elemento HTML div con el contenido del artículo del carrito de compras, lo agrega a la lista de elementos del carrito
     // y lo muestra en la página.
     const FiladelItemCarrito = document.createElement('div')
@@ -169,30 +184,29 @@ function agregarAlCarritoClickeado(event) {
     const totalDelCarro = document.querySelector('.totalDelCarro');
 
     const itemsDelCarrito = document.querySelectorAll('.shoppingCartItem');
-
+    
     itemsDelCarrito.forEach(itemsDelCarrito => {
       
       //Busca y selecciona el elemento que representa el precio del item en el carrito y lo almacena para usarlo mas abajo.
       const shoppingCartItemPriceElemento = itemsDelCarrito.querySelector('.shoppingCartItemPrice');
-
+      
       //Se extrae el precio de un elemento, se elimina el signo de dólar y convierte el precio en un número para poder utilizarlo en operaciones matematicas.
       const shoppingCartItemPrice = Number(shoppingCartItemPriceElemento.textContent.replace('$', ''));
-
+      
       //Busca y toma la cantidad de un articulo del carrito y lo almacena para calcular el total mas abajo.
       const shoppingCartItemQuantityElemento = itemsDelCarrito.querySelector('.shoppingCartItemQuantity');
 
       // Se toma la cantidad y se la guarda para utilizarla en el calculo total
       const shoppingCartItemQuantity = Number (shoppingCartItemQuantityElemento.value);
-
+      
       //Calculo del costo total de los articulos seleccionados en el carrito sumando el costo de cada articulo multiplicado por la cantidad seleccionada
       //y lo guarda en la variable total
       total = total + shoppingCartItemPrice * shoppingCartItemQuantity;
-
+      
     });
 
     //muestra el total de la compra y lo actualiza en el HTML, con el signo $ delante y redondeado a 2 decimales.
     totalDelCarro.innerHTML = `$${total.toFixed(2)}`;
-  
   }
 
 
@@ -229,10 +243,35 @@ function agregarAlCarritoClickeado(event) {
     )
     contenedorItemsCarrito.innerHTML = '';
     actualizarTotalDelCarrito();
+    localStorage.clear()
   }
 
   //Función para que el boton vaciar carrito limpie todo los items
   function vaciarButtonClicked() {
+    const itemsDelCarrito = document.querySelectorAll('.shoppingCartItem');
+    if (itemsDelCarrito.length === 0){
+      Swal.fire(
+        'Carrito Vacío',
+        'No hay nada que eliminar',
+        'error'
+      )
+      return;
+    }
+    Swal.fire(
+      'Carrito Eliminado',
+      'Todos los items del carrito se han eliminado.',
+      'warning'
+    )
     contenedorItemsCarrito.innerHTML = '';
     actualizarTotalDelCarrito();
+    localStorage.clear()
   }
+
+  // Obtener los datos del localStorage y agregarlos al carrito de compras
+const items = JSON.parse(localStorage.getItem('items')) || [];
+for (const item of items) {
+  agregarItemAlCarrito(item.title, item.price, item.image);
+}
+
+// Actualizar el total del carrito de compras
+actualizarTotalDelCarrito();
