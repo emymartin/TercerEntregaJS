@@ -105,24 +105,58 @@ function agregarAlCarritoClickeado(event) {
     const itemImage = item.querySelector('.item-image').src;
 
 
+  // Obtener el array de artículos del LocalStorage o crear uno nuevo si no existe.
+  let items = JSON.parse(localStorage.getItem('items')) || [];
+
+  // Buscar si el artículo ya existe en el array de artículos del LocalStorage.
+  const index = items.findIndex(item => item.title === itemTitle);
+
+  if (index === -1) {
+    // Si el artículo no existe en el array, agregarlo.
     const datosProd = {
       title: itemTitle,
       price: itemPrice,
-      image: itemImage
+      image: itemImage,
+      cantidad: 1
     };
-
-    // Obtener el array de artículos del LocalStorage o crear uno nuevo si no existe.
-    let items = JSON.parse(localStorage.getItem('items')) || [];
-
-    // Agregar el nuevo artículo al array.
     items.push(datosProd);
-
-    // Guardar el array en el LocalStorage como una cadena JSON.
-    localStorage.setItem('items', JSON.stringify(items));
-  
     agregarItemAlCarrito(itemTitle, itemPrice, itemImage);
+  } else {
+    // Si el artículo ya existe en el array, actualizar su cantidad.
+    items[index].cantidad++;
   }
+
+  // Guardar el array en el LocalStorage como una cadena JSON.
+  localStorage.setItem('items', JSON.stringify(items));
+    actualizarCantidadesDelCarrito();
+  actualizarTotalDelCarrito();
+}
+    
+  //Funcion para actualizar las cantidades del carrito tomandolas del localstorage
+  function actualizarCantidadesDelCarrito() {
+    const items = JSON.parse(localStorage.getItem('items')) || [];
+    const shoppingCartItems = contenedorItemsCarrito.getElementsByClassName('shoppingCartItem');
   
+    for (let i = 0; i < shoppingCartItems.length; i++) {
+      const shoppingCartItemTitle = shoppingCartItems[i].querySelector('.shoppingCartItemTitle');
+      const title = shoppingCartItemTitle.textContent;
+  
+      const item = items.find(item => item.title === title);
+  
+      if (item) {
+        const shoppingCartItemQuantity = shoppingCartItems[i].querySelector('.shoppingCartItemQuantity');
+        shoppingCartItemQuantity.value = item.cantidad;
+      }
+    }
+    actualizarTotalDelCarrito();
+  }
+
+  window.onload = function() {
+    actualizarTotalDelCarrito(); // Llamamos a la función para actualizar el total de compra cada vez que se carga la pestaña
+    actualizarCantidadesDelCarrito(); // Llamamos a la función para actualizar las cantidades cada vez que se carga la pestaña
+  }
+
+
   // Función para que al darle añadir al carrito muestre en el carrito los datos que estrajimos anteriormente (itemTitle, itemPrice e ItemImage)
   function agregarItemAlCarrito(itemTitle, itemPrice, itemImage) {
     //Con el for y el if validamos para no duplicar los productos para que cuando seleccionemos varias veces el mismo item incremente la cantidad y no sume filas con el mismo producto
@@ -130,15 +164,13 @@ function agregarAlCarritoClickeado(event) {
     for (let i = 0; i < elementsTitle.length; i++){
       if (elementsTitle[i].innerText === itemTitle){
         let cantidadElementos = elementsTitle[i].parentElement.parentElement.parentElement.querySelector('.shoppingCartItemQuantity');
-        cantidadElementos.value++;
-        //el renglon de abajo es un popup de bootstrap
-        $('.toast').toast('show');        
+        cantidadElementos.value++;         
         actualizarTotalDelCarrito();
         return;
       }
+      
     }
-    // Se crea un nuevo elemento HTML div con el contenido del artículo del carrito de compras, lo agrega a la lista de elementos del carrito
-    // y lo muestra en la página.
+    // Se crea un nuevo elemento HTML div con el contenido del artículo del carrito de compras, lo agrega a la lista de elementos del carrito y lo muestra en la página.
     const FiladelItemCarrito = document.createElement('div')
     const contenidoDelCarrito = `
       <div class="row shoppingCartItem">
@@ -163,6 +195,11 @@ function agregarAlCarritoClickeado(event) {
         FiladelItemCarrito.innerHTML = contenidoDelCarrito
         contenedorItemsCarrito.append(FiladelItemCarrito);
 
+        Toastify({
+          text: "Item Agregado al carrito",            
+          duration: 2000            
+        }).showToast();
+
         //escuchamos el evento click para remover items del DOM
         FiladelItemCarrito
           .querySelector('.buttonDelete')
@@ -172,11 +209,9 @@ function agregarAlCarritoClickeado(event) {
         FiladelItemCarrito
           .querySelector('.shoppingCartItemQuantity')
           .addEventListener('change', cambioCantidad); 
-        
+
         actualizarTotalDelCarrito();
       }
-
-
 
   //Función para actualizar el total, tomando el precio de cada item y la cantidad de veces que aparece en el carrito. Luego informa el total con 2 decimales.
   function actualizarTotalDelCarrito (){
@@ -209,19 +244,44 @@ function agregarAlCarritoClickeado(event) {
     totalDelCarro.innerHTML = `$${total.toFixed(2)}`;
   }
 
-
   //Funcion para eliminar items del carrito
   function removerItemDelCarrito (event){
     const buttonClicked = event.target;
-    buttonClicked.closest('.shoppingCartItem').remove();
+    const itemRemoved = buttonClicked.closest('.shoppingCartItem');
+    const itemRemovedTitle = itemRemoved.querySelector('.shoppingCartItemTitle').textContent;
+    
+    itemRemoved.remove();
+    
+    // Obtener el array de artículos del LocalStorage.
+    let items = JSON.parse(localStorage.getItem('items'));
+
+    // Buscar y eliminar el artículo del array de artículos del LocalStorage.
+    items = items.filter(item => item.title !== itemRemovedTitle);
+
+    // Guardar el nuevo array en el LocalStorage.
+    localStorage.setItem('items', JSON.stringify(items));
+
     actualizarTotalDelCarrito();
-  }
+}
 
   // Funcion para seleccionar la cantidad desde el carrito y que no pueda ser 0 o valor negativo.  
   function cambioCantidad(event){
     const input = event.target;
     //validacion con operador ternario
-    input.value <= 0 ? (input.value = 1) : null;   
+    input.value <= 0 ? (input.value = 1) : null;
+    
+    
+    const item = input.closest('.shoppingCartItem');
+    const itemTitle = item.querySelector('.shoppingCartItemTitle').textContent;
+
+    let items = JSON.parse(localStorage.getItem('items'));
+
+    const index = items.findIndex(item => item.title === itemTitle);
+
+    if (index !== -1) {
+      items[index].cantidad = parseInt(input.value);
+      localStorage.setItem('items', JSON.stringify(items));
+    }
     actualizarTotalDelCarrito();
   }
 
